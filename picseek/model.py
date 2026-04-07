@@ -48,6 +48,15 @@ class CLIPModel:
             return "cuda"
         return "cpu"
 
+    @staticmethod
+    def _extract_tensor(features):
+        """Extract tensor from model output (handles both old and new transformers API)."""
+        import torch
+        if isinstance(features, torch.Tensor):
+            return features
+        # New transformers returns BaseModelOutputWithPooling
+        return features.pooler_output
+
     def encode_image(self, image_path: str) -> list[float]:
         import torch
         from PIL import Image
@@ -55,7 +64,7 @@ class CLIPModel:
         image = Image.open(image_path).convert("RGB")
         inputs = self.processor(images=image, return_tensors="pt").to(self.device)
         with torch.no_grad():
-            features = self.model.get_image_features(**inputs)
+            features = self._extract_tensor(self.model.get_image_features(**inputs))
         features = features / features.norm(p=2, dim=-1, keepdim=True)
         return features.squeeze().cpu().tolist()
 
@@ -66,7 +75,7 @@ class CLIPModel:
         images = [Image.open(p).convert("RGB") for p in image_paths]
         inputs = self.processor(images=images, return_tensors="pt").to(self.device)
         with torch.no_grad():
-            features = self.model.get_image_features(**inputs)
+            features = self._extract_tensor(self.model.get_image_features(**inputs))
         features = features / features.norm(p=2, dim=-1, keepdim=True)
         return features.cpu().tolist()
 
@@ -75,7 +84,7 @@ class CLIPModel:
 
         inputs = self.processor(text=[text], padding=True, return_tensors="pt").to(self.device)
         with torch.no_grad():
-            features = self.model.get_text_features(**inputs)
+            features = self._extract_tensor(self.model.get_text_features(**inputs))
         features = features / features.norm(p=2, dim=-1, keepdim=True)
         return features.squeeze().cpu().tolist()
 
