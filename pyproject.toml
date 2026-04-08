@@ -21,5 +21,8 @@ dependencies = [
 [project.scripts]
 picseek = "picseek.cli:main"
 
+[tool.setuptools.packages.find]
+include = ["picseek*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
